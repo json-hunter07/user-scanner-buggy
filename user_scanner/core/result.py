@@ -23,12 +23,10 @@ CSV_TEMPLATE = "{username},{category},{site_name},{status},{reason}"
 
 def humanize_exception(e: Exception) -> str:
     msg = str(e).lower()
-
     if "10054" in msg:
         return "Connection closed by remote server"
     if "11001" in msg:
         return "Could not resolve hostname"
-
     return str(e)
 
 
@@ -38,7 +36,6 @@ class Status(Enum):
     ERROR = 2
 
     def to_label(self, is_email=False):
-        """Returns the appropriate text label based on the scan type"""
         if self == Status.ERROR:
             return "Error"
         if is_email:
@@ -53,10 +50,10 @@ class Result:
     def __init__(self, status: Status, reason: str | Exception | None = None, **kwargs):
         self.status = status
         self.reason = reason
-
-        self.username = None                                                                                                                                    self.site_name = None
+        self.username = None
+        self.site_name = None
         self.category = None
-        self.is_email = False # Track if this is an email result
+        self.is_email = False 
         self.update(**kwargs)
 
     def update(self, **kwargs):
@@ -65,7 +62,8 @@ class Result:
                 setattr(self, field, kwargs[field])
 
     @classmethod
-    def taken(cls, **kwargs):                                                                                                                                   return cls(Status.TAKEN, **kwargs)
+    def taken(cls, **kwargs):
+        return cls(Status.TAKEN, **kwargs)
 
     @classmethod
     def available(cls, **kwargs):
@@ -81,7 +79,6 @@ class Result:
             status = Status(i)
         except ValueError:
             return cls(Status.ERROR, "Invalid status. Please contact maintainers.")
-
         return cls(status,  reason if status == Status.ERROR else None)
 
     def to_number(self) -> int:
@@ -95,13 +92,12 @@ class Result:
             return ""
         if isinstance(self.reason, str):
             return self.reason
-        # Format the exception
         msg = humanize_exception(self.reason)
         return f"{type(self.reason).__name__}: {msg.capitalize()}"
 
     def as_dict(self) -> dict:
         return {
-            "status": self.status.to_label(self.is_email), # Use dynamic labels
+            "status": self.status.to_label(self.is_email),
             "reason": self.get_reason(),
             "username": self.username,
             "site_name": self.site_name,
@@ -127,13 +123,10 @@ class Result:
     def __eq__(self, other):
         if isinstance(other, Status):
             return self.status == other
-
         if isinstance(other, Result):
             return self.status == other.status
-
         if isinstance(other, int):
             return self.to_number() == other
-
         return NotImplemented
 
     def get_console_output(self) -> str:
@@ -142,15 +135,16 @@ class Result:
         status_text = self.status.to_label(self.is_email)
 
         if self.is_email:
+            # Email: Registered is Green (Found), Not Registered is Red (Not Found)
             color = Fore.GREEN if self == Status.TAKEN else Fore.RED
             icon = "[✔]" if self == Status.TAKEN else "[✘]"
         else:
+            # Username: Available is Green, Taken is Red
             color = Fore.GREEN if self == Status.AVAILABLE else Fore.RED
             icon = "[✔]" if self == Status.AVAILABLE else "[✘]"
 
         if self == Status.AVAILABLE or self == Status.TAKEN:
             return f"  {color}{icon} {site_name} ({username}): {status_text}{Style.RESET_ALL}"
-
         elif self == Status.ERROR:
             reason = f" ({self.get_reason()})" if self.has_reason() else ""
             return f"  {Fore.YELLOW}[!] {site_name} ({username}): {status_text}{reason}{Style.RESET_ALL}"
