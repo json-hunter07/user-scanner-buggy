@@ -54,8 +54,7 @@ class Result:
         self.status = status
         self.reason = reason
 
-        self.username = None
-        self.site_name = None
+        self.username = None                                                                                                                                    self.site_name = None
         self.category = None
         self.is_email = False # Track if this is an email result
         self.update(**kwargs)
@@ -66,8 +65,7 @@ class Result:
                 setattr(self, field, kwargs[field])
 
     @classmethod
-    def taken(cls, **kwargs):
-        return cls(Status.TAKEN, **kwargs)
+    def taken(cls, **kwargs):                                                                                                                                   return cls(Status.TAKEN, **kwargs)
 
     @classmethod
     def available(cls, **kwargs):
@@ -143,14 +141,18 @@ class Result:
         username = self.username
         status_text = self.status.to_label(self.is_email)
 
-        if self == Status.AVAILABLE:
-            return f"  {Fore.GREEN}[✔] {site_name} ({username}): {status_text}{Style.RESET_ALL}"
-        elif self == Status.TAKEN:
-            return f"  {Fore.RED}[✘] {site_name} ({username}): {status_text}{Style.RESET_ALL}"
+        if self.is_email:
+            color = Fore.GREEN if self == Status.TAKEN else Fore.RED
+            icon = "[✔]" if self == Status.TAKEN else "[✘]"
+        else:
+            color = Fore.GREEN if self == Status.AVAILABLE else Fore.RED
+            icon = "[✔]" if self == Status.AVAILABLE else "[✘]"
+
+        if self == Status.AVAILABLE or self == Status.TAKEN:
+            return f"  {color}{icon} {site_name} ({username}): {status_text}{Style.RESET_ALL}"
+
         elif self == Status.ERROR:
-            reason = ""
-            if isinstance(self, Result) and self.has_reason():
-                reason = f" ({self.get_reason()})"
+            reason = f" ({self.get_reason()})" if self.has_reason() else ""
             return f"  {Fore.YELLOW}[!] {site_name} ({username}): {status_text}{reason}{Style.RESET_ALL}"
 
         return ""
